@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus:v1.7.0
+    hostname: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '-config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - monitoring
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+          - node.labels.manager == true
+
+
+  grafana:
+    image: grafana/grafana:4.4.3
+    hostname: grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: 'test123'
+    ports:
+      - '3000:3000'
+    networks:
+      - monitoring
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+          - node.labels.manager == true
+    depends_on:
+      - prometheus
+
+  node-exporter:
+    image: prom/node-exporter:v0.14.0
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.role == worker
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    ports:
+      - "9100:9100"
+    networks:
+      - monitoring
+
+  cadvisor:
+    image: google/cadvisor:v0.27.0
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.role == worker
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    ports:
+      - "8080:8080"
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    external: true

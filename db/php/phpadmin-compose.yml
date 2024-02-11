@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    depends_on:
+      - db
+    deploy:
+      placement:
+        constraints:
+          - node.role == worker
+    environment:
+        - PMA_ARBITRARY=1
+        - PMA_HOST=db
+        - PMA_PORT=3306
+    ports:
+      - 8011:80
+    volumes:
+      - /docker/phpmyadmin/sessions
+    networks:
+      - dbnet
+    links:
+      - mariadb
+
+networks:
+  dbnet:
+    external: true
+
